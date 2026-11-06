@@ -1,0 +1,1728 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traitement Billets Doux - Châteauform'</title>
+    
+    <!-- Google Fonts Inter & Bootstrap 5 CSS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- xlsx-js-style & PDF.js & Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    </script>
+
+    <style>
+        :root {
+            --slate-900: #0f172a;
+            --slate-800: #1e293b;
+            --slate-700: #334155;
+            --slate-600: #475569;
+            --slate-200: #e2e8f0;
+            --slate-100: #f1f5f9;
+            --brand-primary: #3b82f6;
+            --brand-hover: #2563eb;
+            --brand-accent: #f59e0b;
+        }
+
+        body {
+            background-color: #0f172a;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-size: 12px;
+            height: 100vh;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            color: #1e293b;
+        }
+
+        /* --- Header Topbar --- */
+        .app-navbar {
+            background: linear-gradient(135deg, var(--slate-900) 0%, var(--slate-800) 100%);
+            color: #ffffff;
+            height: 50px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+        }
+
+        .app-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .app-brand-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #fff;
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.3), 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .btn-nav-realistic {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 12px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 6px;
+            color: #f1f5f9;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            user-select: none;
+        }
+
+        .btn-nav-realistic:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        /* --- Split Layout Container --- */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 50px);
+            width: 100vw;
+            overflow: hidden;
+            background-color: #f8fafc;
+        }
+
+        /* --- Left Pane (Form Sidebar) --- */
+        .form-pane {
+            width: 430px;
+            min-width: 430px;
+            background-color: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 4px 0 16px rgba(0, 0, 0, 0.03);
+            z-index: 10;
+        }
+
+        .form-content-area {
+            padding: 12px 14px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        /* Segmented Nav Tabs */
+        .segmented-tabs {
+            display: flex;
+            background-color: #f1f5f9;
+            padding: 3px;
+            border-radius: 8px;
+            gap: 2px;
+            margin-bottom: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .segmented-tab-btn {
+            flex: 1;
+            padding: 5px 0;
+            font-size: 11px;
+            font-weight: 700;
+            border: none;
+            border-radius: 6px;
+            background-color: transparent;
+            color: #64748b;
+            transition: all 0.2s ease;
+        }
+
+        .segmented-tab-btn.active {
+            background-color: #ffffff;
+            color: var(--brand-primary);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .segmented-tab-btn.tab-home {
+            color: #d97706;
+        }
+
+        .segmented-tab-btn.tab-home.active {
+            background-color: #fef3c7;
+            color: #b45309;
+        }
+
+        /* Custom Form Controls */
+        .form-row-custom {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .form-label-custom {
+            width: 145px;
+            min-width: 145px;
+            font-weight: 600;
+            font-size: 11px;
+            color: #475569;
+            margin: 0;
+            padding-right: 6px;
+            white-space: nowrap;
+        }
+
+        .form-control-custom {
+            flex: 1;
+            height: 25px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 500;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            background-color: #ffffff;
+            color: #0f172a;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .form-control-custom:focus {
+            outline: none;
+            border-color: var(--brand-primary);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        .form-control-custom[readonly] {
+            background-color: #f8fafc;
+            color: #94a3b8;
+            border-color: #e2e8f0;
+            cursor: not-allowed;
+        }
+
+        .form-control-suggestion {
+            background-color: #f0f9ff !important;
+            border-color: #bae6fd !important;
+        }
+
+        .form-control-suggestion:focus {
+            border-color: #0284c7 !important;
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2) !important;
+        }
+
+        /* Datalist styling */
+        input[list] {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="8" height="5" viewBox="0 0 10 6"><path fill="%2364748b" d="M0 0l5 6 5-6z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 6px center;
+            padding-right: 20px;
+        }
+        input[list]::-webkit-calendar-picker-indicator { opacity: 0; }
+
+        /* Custom Dropdown Popup */
+        .custom-dropdown-menu {
+            position: absolute;
+            z-index: 9999;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            max-height: 190px;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+            display: none;
+            font-size: 11px;
+        }
+        .custom-dropdown-item {
+            padding: 5px 10px;
+            cursor: pointer;
+            white-space: nowrap;
+            color: #334155;
+        }
+        .custom-dropdown-item:hover, .custom-dropdown-item.active {
+            background-color: var(--brand-primary);
+            color: #ffffff;
+        }
+
+        .btn-i-custom {
+            width: 22px;
+            height: 25px;
+            padding: 0;
+            font-size: 11px;
+            font-family: serif;
+            font-style: italic;
+            font-weight: bold;
+            background-color: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+            border-right: none;
+            border-radius: 4px 0 0 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+        }
+
+        .btn-i-custom:hover {
+            background-color: #e2e8f0;
+            color: var(--slate-900);
+        }
+
+        /* Action bar bottom */
+        .action-bar {
+            background-color: #f8fafc;
+            padding: 10px 14px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        /* --- Right Pane (PDF Viewer) --- */
+        .viewer-pane {
+            flex: 1;
+            background-color: #0f172a;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .viewer-toolbar {
+            background-color: #1e293b;
+            color: #f8fafc;
+            padding: 6px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .viewer-container {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            position: relative;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+        }
+
+        #pdfCanvas {
+            box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            background-color: white;
+            transition: transform 0.2s ease;
+        }
+
+        .pill-toggle {
+            background: #0f172a;
+            padding: 2px;
+            border-radius: 6px;
+            border: 1px solid #334155;
+            display: inline-flex;
+        }
+
+        .pill-toggle .btn {
+            border: none;
+            padding: 3px 14px;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 4px;
+            color: #94a3b8;
+        }
+
+        .pill-toggle .btn.active {
+            background-color: var(--brand-primary);
+            color: #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- BARRE SUPÉRIEURE NAVBAR & ACTIONS COMPACTES -->
+    <div class="app-navbar">
+        <div class="app-brand">
+            <div class="app-brand-icon">
+                <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+            </div>
+            <div>
+                <div class="fw-bold tracking-wide text-white leading-tight">Traitement Billets Doux</div>
+                <div class="text-xs text-slate-400" style="font-size: 10px;">Châteauform'</div>
+            </div>
+            <span id="envBadge" class="badge rounded-pill ms-2" style="font-size: 10px;">Chargement...</span>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <!-- 1. Ouvrir -->
+            <label class="btn-nav-realistic btn-txt-custom" title="Ouvrir le fichier TXT principal">
+                <div class="icon-doc-3d">
+                    <div class="doc-page">
+                        <div class="doc-fold"></div>
+                        <div class="doc-lines"><span></span><span></span><span></span></div>
+                    </div>
+                </div> 
+                1. Ouvrir
+                <input type="file" id="txtFileInput" accept=".txt" style="display:none;" onchange="loadTxtFile(event)">
+            </label>
+
+            <!-- 2. Dossier PDF -->
+            <label class="btn-nav-realistic btn-pdf-custom" title="Sélectionner le dossier contenant les PDF scannés">
+                <div class="icon-folder-3d">
+                    <div class="folder-back"></div>
+                    <div class="folder-paper"></div>
+                    <div class="folder-front"></div>
+                </div> 
+                2. Dossier PDF
+                <input type="file" id="folderScansInput" webkitdirectory directory multiple style="display:none;" onchange="loadScansFolder(event)">
+            </label>
+
+            <!-- 3. Dossier Base -->
+            <label class="btn-nav-realistic btn-base-custom" title="Sélectionner le dossier 'base'">
+                <div class="icon-real-key-3d">
+                    <div class="key-ring"></div>
+                    <div class="key-shaft"></div>
+                    <div class="key-blade"></div>
+                </div> 
+                3. Dossier Base
+                <input type="file" id="folderBaseInput" webkitdirectory directory multiple style="display:none;" onchange="loadBaseFolder(event)">
+            </label>
+
+            <div class="vr bg-secondary opacity-25 mx-1" style="height: 20px;"></div>
+
+            <!-- TOGGLE MODE HOME -->
+            <div class="d-flex align-items-center gap-2 px-2 py-1 rounded btn-home-custom" style="border: 1px solid rgba(255,255,255,0.12);">
+                <input type="checkbox" id="homeCheckbox" class="form-check-input mt-0" style="cursor: pointer;" onchange="toggleHomeMode()">
+                <label for="homeCheckbox" class="text-white fw-bold mb-0 flex-shrink-0 cursor-pointer d-flex align-items-center gap-2" style="font-size: 11px;">
+                    <div class="icon-chateau-3d">
+                        <div class="chateau-roof"></div>
+                        <div class="chateau-body">
+                            <div class="chateau-door"></div>
+                        </div>
+                    </div>
+                    Home
+                </label>
+            </div>
+
+            <!-- BOUTON EXPORT XLSX -->
+            <button type="button" class="btn-nav-realistic text-white fw-semibold ms-1 btn-export-custom" onclick="exportData()">
+                <div class="icon-doc-3d icon-excel-3d">
+                    <div class="doc-page">
+                        <div class="doc-fold"></div>
+                        <div class="doc-grid"><span></span><span></span></div>
+                    </div>
+                </div> 
+                Exporter
+            </button>
+        </div>
+    </div>
+
+<style>
+/* --- COULEURS D'ARRIÈRE-PLAN ASSORTIES AUX BOUTONS --- */
+.btn-txt-custom { background: linear-gradient(180deg, #3d2c1d 0%, #241911 100%); }
+.btn-txt-custom:hover { background: linear-gradient(180deg, #4d3826 0%, #2d2016 100%); }
+.btn-pdf-custom { background: linear-gradient(180deg, #3d3119 0%, #261f10 100%); }
+.btn-pdf-custom:hover { background: linear-gradient(180deg, #4d3e20 0%, #302614 100%); }
+.btn-base-custom { background: linear-gradient(180deg, #1e3a5f 0%, #13243b 100%); }
+.btn-base-custom:hover { background: linear-gradient(180deg, #264875 0%, #182d49 100%); }
+.btn-home-custom { background: linear-gradient(180deg, rgba(29, 53, 87, 0.7) 0%, rgba(13, 27, 42, 0.7) 100%) !important; box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08); }
+.btn-export-custom { background: linear-gradient(180deg, #065f46 0%, #022c22 100%) !important; border: none; }
+.btn-export-custom:hover { background: linear-gradient(180deg, #047857 0%, #064e3b 100%) !important; }
+
+/* --- STYLES DES MINI-ICÔNES 3D COMPACTES --- */
+.icon-doc-3d { position: relative; width: 14px; height: 18px; display: inline-block; vertical-align: middle; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3)); }
+.icon-doc-3d .doc-page { position: relative; width: 100%; height: 100%; background: linear-gradient(135deg, #ffc837 0%, #ff8008 100%); border-radius: 2px; border-top-right-radius: 5px; box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -1px 2px rgba(0, 0, 0, 0.2); }
+.icon-doc-3d .doc-fold { position: absolute; top: 0; right: 0; width: 5px; height: 5px; background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(0, 0, 0, 0.15) 100%); border-bottom-left-radius: 2px; }
+.icon-doc-3d .doc-lines { position: absolute; top: 6px; left: 2.5px; right: 2.5px; display: flex; flex-direction: column; gap: 1.5px; }
+.icon-doc-3d .doc-lines span { display: block; height: 1.2px; background: rgba(255, 255, 255, 0.7); border-radius: 1px; }
+.icon-doc-3d .doc-lines span:nth-child(1) { width: 75%; }
+.icon-doc-3d .doc-lines span:nth-child(2) { width: 100%; }
+.icon-doc-3d .doc-lines span:nth-child(3) { width: 50%; }
+
+.icon-excel-3d .doc-page { background: linear-gradient(135deg, #059669 0%, #064e3b 100%); }
+.icon-excel-3d .doc-grid { position: absolute; top: 5px; left: 2px; right: 2px; bottom: 2px; border: 1px solid rgba(255,255,255,0.4); border-radius: 1px; background: linear-gradient(90deg, transparent 50%, rgba(255,255,255,0.3) 50%), linear-gradient(0deg, transparent 50%, rgba(255,255,255,0.3) 50%); background-size: 3px 3px; }
+
+.icon-folder-3d { position: relative; width: 16px; height: 15px; display: inline-block; vertical-align: middle; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3)); }
+.folder-back { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%); border-radius: 2px; box-shadow: inset 0 1px 1px rgba(255,255,255,0.4); }
+.folder-paper { position: absolute; top: 2px; left: 2px; right: 2px; height: 8px; background: #f8fafc; border-radius: 1px; }
+.folder-front { position: absolute; bottom: 0; left: 0; width: 100%; height: 10px; background: linear-gradient(180deg, #f59e0b 0%, #b45309 100%); border-radius: 2px; box-shadow: inset 0 1px 1px rgba(255,255,255,0.5), 0 1px 2px rgba(0,0,0,0.2); }
+
+.icon-real-key-3d { position: relative; width: 16px; height: 16px; display: inline-block; vertical-align: middle; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3)); transform: rotate(-45deg); }
+.key-ring { position: absolute; top: 0; left: 3px; width: 8px; height: 8px; border: 2px solid #38bdf8; border-radius: 50%; box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6); background: rgba(2, 132, 199, 0.1); }
+.key-shaft { position: absolute; top: 7px; left: 6.5px; width: 3px; height: 8px; background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%); border-radius: 1px; box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5); }
+.key-blade { position: absolute; bottom: 0; left: 5px; width: 6px; height: 3px; background: linear-gradient(180deg, #0ea5e9 0%, #0369a1 100%); border-radius: 1px; box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4); }
+
+.icon-chateau-3d { position: relative; width: 14px; height: 13px; display: inline-block; vertical-align: middle; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3)); }
+.chateau-roof { position: absolute; top: -2px; left: -1px; right: -1px; height: 6px; background: linear-gradient(180deg, #991b1b 0%, #7f1d1d 100%); clip-path: polygon(50% 0%, 100% 100%, 0% 100%); border-radius: 1px; }
+.chateau-body { position: absolute; bottom: 0; left: 1px; right: 1px; height: 8px; background: linear-gradient(180deg, #fef3c7 0%, #e2e8f0 100%); border-bottom-left-radius: 1.5px; border-bottom-right-radius: 1.5px; display: flex; align-items: flex-end; justify-content: center; box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.9), 0 1px 2px rgba(0, 0, 0, 0.2); }
+.chateau-door { width: 3.5px; height: 5px; background: linear-gradient(180deg, #b45309 0%, #78350f 100%); border-top-left-radius: 2px; border-top-right-radius: 2px; }
+</style>
+
+    <!-- CONTENEUR SPLIT DYNAMIQUE -->
+    <div class="main-container">
+        
+        <!-- VOLET DE SAISIE GAUCHE -->
+        <div class="form-pane">
+            <div class="form-content-area">
+                
+                <!-- ONGLETS DE SAISIE -->
+                <div class="segmented-tabs">
+                    <button type="button" id="tabBtn1" class="segmented-tab-btn active" onclick="switchTab(1)">Volet 1</button>
+                    <button type="button" id="tabBtn2" class="segmented-tab-btn" onclick="switchTab(2)">Volet 2</button>
+                    <button type="button" id="tabBtn3" class="segmented-tab-btn" onclick="switchTab(3)">Volet 3</button>
+                    <button type="button" id="tabBtn4Nav" class="segmented-tab-btn tab-home" style="display:none;" onclick="switchTab(4)"><i class="bi bi-house-fill me-1"></i>Home</button>
+                </div>
+
+                <form id="saisieForm" onsubmit="event.preventDefault();">
+                    <!-- VOLET 1 -->
+                    <div id="volet1">
+                        <div class="form-row-custom"><label class="form-label-custom">Langue :</label><input type="text" id="f_langue" class="form-control-custom" list="langues_list"><datalist id="langues_list"><option value="Français"><option value="Allemand"><option value="Anglais"><option value="Espagnol"><option value="Italien"><option value="Neerlandais"></datalist></div>
+                        <div class="form-row-custom"><label class="form-label-custom">N° Résa :</label><input type="text" id="f_no_resa" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Pays :</label><input type="text" id="f_pays" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Site :</label><input type="text" id="f_site" class="form-control-custom" readonly></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Détails :</label><input type="text" id="f_details" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Nom Société :</label><input type="text" id="f_societe" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Nom séminaire :</label><input type="text" id="f_seminaire" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Date arrivée :</label><button type="button" class="btn-i-custom" onclick="toggleDateFormat('f_date_arrivee')">i</button><input type="text" id="f_date_arrivee" class="form-control-custom" style="border-top-left-radius: 0; border-bottom-left-radius: 0;"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Date départ :</label><button type="button" class="btn-i-custom" onclick="toggleDateFormat('f_date_depart')">i</button><input type="text" id="f_date_depart" class="form-control-custom" style="border-top-left-radius: 0; border-bottom-left-radius: 0;"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Nb Participants :</label><input type="text" id="f_nb_participants" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Détail Chambre :</label><input type="text" id="f_detail_chambre" class="form-control-custom" list="detail_chambre_list"><datalist id="detail_chambre_list"><option value="Pas de chambre connue"><option value="Délogé"></datalist></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Salle de réunion :</label><input type="text" id="f_salle_reunion" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Infos :</label><input type="text" id="f_infos" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">N° contact :</label><input type="text" id="f_no_contact" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Prénom :</label><input type="text" id="f_prenom" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Nom :</label><input type="text" id="f_nom" class="form-control-custom text-uppercase" oninput="this.value = this.value.toUpperCase()"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Chambre :</label><input type="text" id="f_chambre" class="form-control-custom" list="chambres_list" onkeydown="handleChambreTab(event)"><datalist id="chambres_list"></datalist></div>
+                    </div>
+
+                    <!-- VOLET 2 -->
+                    <div id="volet2" style="display:none;">
+                        <div class="form-row-custom"><label class="form-label-custom">Revenir :</label><input type="text" id="f_revenir" class="form-control-custom" list="revenir_list"><datalist id="revenir_list"><option value="Certainement"><option value="Probablement"><option value="Peut-être"><option value="Sûrement pas"></datalist></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Recom :</label><input type="text" id="f_recom" class="form-control-custom" list="recom_list"><datalist id="recom_list"><option value="Vivement"><option value="Probablement"><option value="Peut-être"><option value="Sûrement pas"></datalist></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Prenom contact :</label><input type="text" id="f_prenom_contact" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Nom contact :</label><input type="text" id="f_nom_contact" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Société contact :</label><input type="text" id="f_societe_contact" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Adresse contact :</label><input type="text" id="f_adresse_contact" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">CPost Contact :</label><input type="text" id="f_cpost_contact" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Ville Contact :</label><input type="text" id="f_ville_contact" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Tél Contact :</label><input type="text" id="f_tel_contact" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Email Contact :</label><input type="text" id="f_email_contact" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Pays Contact :</label><input type="text" id="f_pays_contact" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Région Contact :</label><input type="text" id="f_region_contact" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Lettre WEB :</label><input type="text" id="f_lettre_web" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">LMKJ :</label><input type="text" id="f_lmkj" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Email participant :</label><input type="text" id="f_email_participant" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Com couple :</label><input type="text" id="f_com_couple" class="form-control-custom"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">User name :</label><input type="text" id="f_user_name" class="form-control-custom" readonly></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Date saisie :</label><input type="text" id="f_date_saisie" class="form-control-custom" readonly></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Heure saisie :</label><input type="text" id="f_heure_saisie" class="form-control-custom" readonly></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Code SEM :</label><input type="text" id="f_code_sem" class="form-control-custom" readonly onkeydown="handleCodeSemTab(event)"></div>
+                    </div>
+
+                    <!-- VOLET 3 -->
+                    <div id="volet3" style="display:none;">
+                        <div class="form-row-custom"><label class="form-label-custom">Satisfaction globale</label><input type="text" id="f_sat_globale" class="form-control-custom" list="sat_list"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Satisfaction accueil</label><input type="text" id="f_sat_acceuil" class="form-control-custom" list="sat_list"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Accueil suggestion</label><input type="text" id="f_sug_acceuil" class="form-control-custom form-control-suggestion"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Satisfaction site</label><input type="text" id="f_sat_site" class="form-control-custom" list="sat_list"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Site suggestion</label><input type="text" id="f_sug_site" class="form-control-custom form-control-suggestion"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Satisfaction chambre</label><input type="text" id="f_sat_chambre" class="form-control-custom" list="sat_list"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Suggestion chambre</label><input type="text" id="f_sug_chambre" class="form-control-custom form-control-suggestion"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Satisfaction propreté</label><input type="text" id="f_sat_proprete" class="form-control-custom" list="sat_list"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Suggestion propreté</label><input type="text" id="f_sug_proprete" class="form-control-custom form-control-suggestion"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Satisfaction SDR</label><input type="text" id="f_sat_sdr" class="form-control-custom" list="sat_list"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Suggestion SDR</label><input type="text" id="f_sug_sdr" class="form-control-custom form-control-suggestion"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Satisfaction PDJ</label><input type="text" id="f_sat_pdj" class="form-control-custom" list="sat_list"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Satisfaction CASSE C</label><input type="text" id="f_sat_cassec" class="form-control-custom" list="sat_list"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Satisfaction DEJ</label><input type="text" id="f_sat_dej" class="form-control-custom" list="sat_list"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Satisfaction GOUTER</label><input type="text" id="f_sat_gouter" class="form-control-custom" list="sat_list"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Satisfaction APERO</label><input type="text" id="f_sat_apero" class="form-control-custom" list="sat_list"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Satisfaction DINER</label><input type="text" id="f_sat_diner" class="form-control-custom" list="sat_list"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Satisfaction PRESENTATION</label><input type="text" id="f_sat_presentation" class="form-control-custom" list="sat_list"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Satisfaction SERVICE</label><input type="text" id="f_sat_service" class="form-control-custom" list="sat_list"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Suggestion Table</label><input type="text" id="f_sug_table" class="form-control-custom form-control-suggestion"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Satisfaction Det Jour</label><input type="text" id="f_sat_detjour" class="form-control-custom" list="sat_list"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Satisfaction Det Soir</label><input type="text" id="f_sat_detsoir" class="form-control-custom" list="sat_list"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Suggestion Détente</label><input type="text" id="f_sug_detente" class="form-control-custom form-control-suggestion"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Autre Suggestion</label><input type="text" id="f_autre_suggestion" class="form-control-custom form-control-suggestion"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Status BD :</label><input type="text" id="f_status_bd" class="form-control-custom" list="status_list"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Langue commentaire</label><input type="text" id="f_langue_commentaire" class="form-control-custom" list="langues_com_list" onkeydown="handleLangueCommentaireTab(event)"></div>
+                    </div>
+
+                    <!-- VOLET 4 (HOME) -->
+                    <div id="volet4" style="display:none;">
+                        <div class="form-row-custom"><label class="form-label-custom">Satisfaction Support</label><input type="text" id="f_sat_support" class="form-control-custom" list="sat_list"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Suggestion Support</label><input type="text" id="f_sug_support" class="form-control-custom form-control-suggestion"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Satisfaction Signaletique</label><input type="text" id="f_sat_signaletique" class="form-control-custom" list="sat_list"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Suggestion Signaletique</label><input type="text" id="f_sug_signaletique" class="form-control-custom form-control-suggestion"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Satisfaction QualNounou</label><input type="text" id="f_sat_qualnounou" class="form-control-custom" list="sat_list"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Suggestion QualNounou</label><input type="text" id="f_sug_qualnounou" class="form-control-custom form-control-suggestion"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Satisfaction PertNounou</label><input type="text" id="f_sat_pertnounou" class="form-control-custom" list="sat_list"></div>
+                        <div class="form-row-custom"><label class="form-label-custom">Suggestion PertNounou</label><input type="text" id="f_sug_pertnounou" class="form-control-custom form-control-suggestion"></div>
+                    </div>
+
+                    <datalist id="sat_list"><option value="Complètement satisfait"><option value="Très satisfait"><option value="Satisfait"><option value="Moyennement satisfait"><option value="Insatisfait"></datalist>
+                    <datalist id="status_list"><option value="Pour commentaires"><option value="Vierge"></datalist>
+                    <datalist id="langues_com_list"><option value="Allemand"><option value="Anglais"><option value="Espagnol"><option value="Français"><option value="Italien"><option value="Neerlandais"></datalist>
+                </form>
+            </div>
+
+            <!-- BARRE NAVIGATION INFÉRIEURE -->
+            <div class="action-bar">
+                <div class="d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-sm btn-light border fw-semibold px-3" onclick="prevRecord()">
+                        <i class="bi bi-arrow-left me-1"></i> Précédent
+                    </button>
+                    <span id="recordIndex" class="badge bg-slate-200 text-dark fw-bold px-3 py-1.5" style="font-size: 11px;">0 / 0</span>
+                    <button type="button" class="btn btn-sm btn-primary fw-semibold px-3" onclick="nextRecord()">
+                        Suivant <i class="bi bi-arrow-right ms-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISIONNEUSE PDF DROITE -->
+        <div class="viewer-pane">
+            <div class="viewer-toolbar">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="pill-toggle">
+                        <button class="btn active" id="btnRecto" onclick="switchSide('Recto')">Recto</button>
+                        <button class="btn" id="btnVerso" onclick="switchSide('Verso')">Verso</button>
+                    </div>
+                    <span id="imageCounterLabel" class="small text-info fw-medium"></span>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                    <button class="btn btn-sm btn-dark border border-secondary border-opacity-25" onclick="zoom(-0.2)" title="Zoom arrière (Ctrl -)">
+                        <i class="bi bi-zoom-out"></i>
+                    </button>
+                    <span id="zoomLevel" class="small text-light px-2 fw-semibold" style="min-width: 45px; text-align: center;">100%</span>
+                    <button class="btn btn-sm btn-dark border border-secondary border-opacity-25" onclick="zoom(0.2)" title="Zoom avant (Ctrl +)">
+                        <i class="bi bi-zoom-in"></i>
+                    </button>
+                    <div class="vr bg-secondary opacity-25 mx-2" style="height: 16px;"></div>
+                    <button class="btn btn-sm btn-dark border border-secondary border-opacity-25" onclick="rotate()" title="Pivoter 90° (Ctrl + R)">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="viewer-container">
+                <canvas id="pdfCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE NOTIFICATION PROFESSIONNEL (REMPLACE L'ALERTE CLASSIQUE) -->
+    <div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-white" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 1px solid #334155; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);">
+                <div class="modal-body text-center p-4">
+                    <div class="mb-3 d-inline-flex align-items-center justify-content-center" style="width: 56px; height: 56px; background: rgba(16, 185, 129, 0.15); border-radius: 50%; border: 1px solid rgba(16, 185, 129, 0.3);">
+                        <i class="bi bi-check-circle-fill text-emerald-400" style="font-size: 28px; color: #10b981;"></i>
+                    </div>
+                    <h5 class="fw-bold text-white mb-2" style="font-size: 16px;">Exportation réussie !</h5>
+                    <p class="text-slate-300 mb-4" style="font-size: 13px;">
+                        Caractères : <span id="modalCharCount" class="fw-bold" style="color: #ef4444 !important; font-size: 15px;">0</span>
+                    </p>
+                    <button type="button" class="btn btn-sm text-white fw-semibold px-4 py-2" data-bs-dismiss="modal" style="background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%); border-radius: 6px; border: none;">
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT APPLICATION -->
+    <script>
+        let fs = null;
+        let path = null;
+        let isDesktop = false;
+
+        try {
+            if (typeof require !== 'undefined') {
+                fs = require('fs');
+                path = require('path');
+                isDesktop = true;
+            }
+        } catch (e) {
+            isDesktop = false;
+        }
+
+        let currentData = [];
+        let currentIndex = 0;
+        let currentScale = 1.0;
+        let currentRotation = 0;
+        let pdfDoc = null;
+        let currentSide = 'Recto';
+
+        let scansFilesMap = {};
+        let chambresParSite = {}; 
+        let baseExcelTemplate = null;
+        let currentTxtBaseName = ""; 
+        let extractedUserName = "";
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const badge = document.getElementById('envBadge');
+            if (isDesktop) {
+                badge.className = "badge bg-emerald-500 text-white ms-2";
+                badge.innerText = "Desktop Local (Node.js)";
+                badge.style.backgroundColor = "#10b981";
+            } else {
+                badge.className = "badge text-dark ms-2";
+                badge.innerText = "Mode Web Standard";
+                badge.style.backgroundColor = "#f59e0b";
+            }
+
+            initDatalistLetterValidation();
+            initKeyboardShortcuts();
+
+            const savedChambres = localStorage.getItem('chambres_par_site_cache');
+            if (savedChambres) {
+                try {
+                    chambresParSite = JSON.parse(savedChambres);
+                } catch(e) { console.error(e); }
+            }
+
+            const formInputs = document.querySelectorAll('#saisieForm input');
+            formInputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    if (currentData.length > 0) {
+                        saveCurrentRecord();
+                    }
+                });
+            });
+        });
+
+        /* RACCOURCIS CLAVIER (Zoom & Rotation) */
+        function initKeyboardShortcuts() {
+            window.addEventListener('keydown', (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    const key = e.key.toLowerCase();
+
+                    // Zoom avant (Ctrl + ou Ctrl =)
+                    if (key === '+' || key === '=') {
+                        e.preventDefault();
+                        zoom(0.2);
+                    }
+                    // Zoom arrière (Ctrl -)
+                    else if (key === '-') {
+                        e.preventDefault();
+                        zoom(-0.2);
+                    }
+                    // Rotation (Ctrl + R)
+                    else if (key === 'r') {
+                        e.preventDefault();
+                        rotate();
+                    }
+                }
+            });
+        }
+
+        function initDatalistLetterValidation() {
+            const inputsWithList = document.querySelectorAll('input[list]');
+
+            inputsWithList.forEach(input => {
+                const listId = input.getAttribute('list');
+                const datalist = document.getElementById(listId);
+                if (!datalist) return;
+
+                const allOptions = Array.from(datalist.options).map(opt => opt.value);
+
+                const menu = document.createElement('div');
+                menu.className = 'custom-dropdown-menu';
+                document.body.appendChild(menu);
+
+                let activeIndex = -1;
+                let lastKeyTime = 0;
+                let lastKeyChar = "";
+                let cycleIndex = 0;
+
+                function positionMenu() {
+                    const rect = input.getBoundingClientRect();
+                    menu.style.top = (rect.bottom + window.scrollY) + 'px';
+                    menu.style.left = (rect.left + window.scrollX) + 'px';
+                    menu.style.width = rect.width + 'px';
+                }
+
+                function checkCyclingShortcut(typedChar) {
+                    const c = typedChar.toLowerCase();
+                    const now = Date.now();
+
+                    if (now - lastKeyTime > 800 || lastKeyChar !== c) {
+                        cycleIndex = 0;
+                    } else {
+                        cycleIndex++;
+                    }
+
+                    lastKeyTime = now;
+                    lastKeyChar = c;
+
+                    if (listId === 'langues_list' || listId === 'langues_com_list') {
+                        if (c === 'a') {
+                            const opts = ['Allemand', 'Anglais'];
+                            return opts[cycleIndex % opts.length];
+                        }
+                        if (c === 'f') return 'Français';
+                        if (c === 'e') return 'Espagnol';
+                        if (c === 'i') return 'Italien';
+                        if (c === 'n') return 'Neerlandais';
+                    }
+
+                    if (listId === 'revenir_list' || listId === 'recom_list') {
+                        if (c === 'p') {
+                            const opts = ['Probablement', 'Peut-être'];
+                            return opts[cycleIndex % opts.length];
+                        }
+                        if (c === 'c') return 'Certainement';
+                        if (c === 'v') return 'Vivement';
+                        if (c === 's') return 'Sûrement pas';
+                    }
+
+                    if (listId === 'sat_list') {
+                        if (c === 'm') return 'Moyennement satisfait';
+                        if (c === 'c') return 'Complètement satisfait';
+                        if (c === 't') return 'Très satisfait';
+                        if (c === 's') return 'Satisfait';
+                        if (c === 'i') return 'Insatisfait';
+                    }
+
+                    if (listId === 'status_list') {
+                        if (c === 'p') return 'Pour commentaires';
+                        if (c === 'v') return 'Vierge';
+                    }
+
+                    if (listId === 'detail_chambre_list') {
+                        if (c === 'p') return 'Pas de chambre connue';
+                        if (c === 'd') return 'Délogé';
+                    }
+
+                    return null;
+                }
+
+                function renderMatches(query) {
+                    const q = query.trim().toLowerCase();
+
+                    if (!q) {
+                        menu.style.display = 'none';
+                        return;
+                    }
+
+                    if (query.length === 1) {
+                        const shortcutVal = checkCyclingShortcut(query);
+                        if (shortcutVal) {
+                            input.value = shortcutVal;
+                            menu.style.display = 'none';
+                            if (typeof saveCurrentRecord === 'function') saveCurrentRecord();
+                            return;
+                        }
+                    }
+
+                    const exactMatch = allOptions.find(opt => opt.toLowerCase() === q);
+                    if (exactMatch) {
+                        menu.style.display = 'none';
+                        return;
+                    }
+
+                    let matches = allOptions.filter(opt => opt.toLowerCase().includes(q));
+                    matches.sort((a, b) => {
+                        const aLower = a.toLowerCase();
+                        const bLower = b.toLowerCase();
+                        const aStarts = aLower.startsWith(q) ? 0 : 1;
+                        const bStarts = bLower.startsWith(q) ? 0 : 1;
+                        return aStarts - bStarts;
+                    });
+
+                    menu.innerHTML = '';
+                    activeIndex = -1;
+
+                    if (matches.length === 0) {
+                        menu.style.display = 'none';
+                        return;
+                    }
+
+                    matches.forEach((itemText) => {
+                        const item = document.createElement('div');
+                        item.className = 'custom-dropdown-item';
+                        item.textContent = itemText;
+
+                        item.addEventListener('mousedown', (e) => {
+                            e.preventDefault();
+                            input.value = itemText;
+                            menu.style.display = 'none';
+                            if (typeof saveCurrentRecord === 'function') saveCurrentRecord();
+                        });
+
+                        menu.appendChild(item);
+                    });
+
+                    positionMenu();
+                    menu.style.display = 'block';
+                }
+
+                input.addEventListener('input', function() {
+                    renderMatches(this.value);
+                });
+
+                input.addEventListener('blur', function() {
+                    setTimeout(() => { menu.style.display = 'none'; }, 150);
+                });
+
+                input.addEventListener('keydown', function(e) {
+                    const items = menu.querySelectorAll('.custom-dropdown-item');
+                    if (menu.style.display === 'block' && items.length > 0) {
+                        if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            activeIndex = (activeIndex + 1) % items.length;
+                            updateActiveItem(items);
+                        } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            activeIndex = (activeIndex - 1 + items.length) % items.length;
+                            updateActiveItem(items);
+                        } else if (e.key === 'Enter') {
+                            if (activeIndex >= 0 && activeIndex < items.length) {
+                                e.preventDefault();
+                                input.value = items[activeIndex].textContent;
+                                menu.style.display = 'none';
+                                if (typeof saveCurrentRecord === 'function') saveCurrentRecord();
+                            }
+                        } else if (e.key === 'Escape') {
+                            menu.style.display = 'none';
+                        }
+                    }
+                });
+
+                function updateActiveItem(items) {
+                    items.forEach((item, idx) => {
+                        if (idx === activeIndex) {
+                            item.classList.add('active');
+                            item.scrollIntoView({ block: 'nearest' });
+                        } else {
+                            item.classList.remove('active');
+                        }
+                    });
+                }
+            });
+        }
+
+        function toggleHomeMode() {
+            const isHome = document.getElementById('homeCheckbox').checked;
+            document.getElementById('tabBtn4Nav').style.display = isHome ? 'block' : 'none';
+            if (currentData.length > 0) {
+                currentData[currentIndex].is_home = isHome;
+                saveCurrentRecord();
+            }
+            if (!isHome && document.getElementById('volet4').style.display === 'block') {
+                switchTab(3);
+            }
+        }
+
+        async function loadBaseFolder(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+            let count = 0;
+            for (let file of files) {
+                const lowerName = file.name.toLowerCase();
+                if (lowerName === 'base.xlsx') {
+                    try {
+                        const arrayBuffer = await file.arrayBuffer();
+                        baseExcelTemplate = XLSX.read(arrayBuffer, { type: 'array', cellStyles: true });
+                    } catch(e) {
+                        console.error("Erreur lecture base.xlsx :", e);
+                    }
+                    continue;
+                }
+
+                if (file.name.endsWith('.txt')) {
+                    const siteName = file.name.replace(/\.[^/.]+$/, "").trim().toLowerCase();
+                    const text = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.readAsText(file, "windows-1252");
+                    });
+                    chambresParSite[siteName] = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                    count++;
+                }
+            }
+            localStorage.setItem('chambres_par_site_cache', JSON.stringify(chambresParSite));
+            alert(`Dossier Base chargé !\n- ${count} sites de chambres mémorisés.${baseExcelTemplate ? '\n- Modèle base.xlsx détecté.' : ''}`);
+            if (currentData.length > 0) displayCurrentRecord();
+        }
+
+        function updateActiveTabVisual(tabNum) {
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`tabBtn${i}${i===4?'Nav':''}`);
+                const volet = document.getElementById(`volet${i}`);
+                if (btn && volet) {
+                    if (tabNum === i) {
+                        btn.classList.add('active');
+                        volet.style.display = 'block';
+                    } else {
+                        btn.classList.remove('active');
+                        volet.style.display = 'none';
+                    }
+                }
+            }
+            switchSide((tabNum === 3 || tabNum === 4) ? 'Verso' : 'Recto');
+        }
+
+        function switchTab(tabNum) {
+            if (currentData.length > 0) {
+                saveCurrentRecord();
+            }
+            updateActiveTabVisual(tabNum);
+        }
+
+        function handleChambreTab(e) { if (e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); switchTab(2); document.getElementById('f_revenir').focus(); } }
+        
+        function handleCodeSemTab(e) { 
+            if (e.key === 'Tab' && !e.shiftKey) { 
+                e.preventDefault(); 
+                switchTab(3); 
+                document.getElementById('f_sat_globale').focus(); 
+            } 
+        }
+
+        function handleLangueCommentaireTab(e) {
+            if (e.key === 'Tab' && !e.shiftKey) {
+                const isHome = document.getElementById('homeCheckbox').checked;
+                if (isHome) {
+                    e.preventDefault();
+                    switchTab(4);
+                    document.getElementById('f_sat_support').focus();
+                }
+            }
+        }
+
+        function toggleDateFormat(elementId) {
+            const input = document.getElementById(elementId);
+            let val = input.value.trim().replace(/00:00:00/g, '').replace(/00:00/g, '').trim();
+            const parts = val.split('/');
+            if (parts.length === 3) input.value = `${parts[1]}/${parts[0]}/${parts[2]}`;
+        }
+
+        function loadTxtFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            currentTxtBaseName = file.name.replace(/\.[^/.]+$/, "").trim();
+            extractedUserName = currentTxtBaseName.split('_').pop().trim();
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    parseAndLoadTxt(e.target.result);
+                    setTimeout(() => { 
+                        const scanInput = document.getElementById('folderScansInput');
+                        if(scanInput) scanInput.click(); 
+                    }, 200);
+                } catch (err) {
+                    console.error("Erreur lors du traitement du fichier TXT :", err);
+                    alert("Erreur lors de la lecture du contenu du fichier TXT.");
+                }
+            };
+            reader.onerror = function() {
+                alert("Impossible de lire le fichier TXT sélectionné.");
+            };
+            reader.readAsText(file, "windows-1252");
+        }
+
+        async function loadScansFolder(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+            scansFilesMap = {};
+            
+            for (let file of files) {
+                const relativePath = file.webkitRelativePath || file.name;
+                if (relativePath.split('/').includes('base')) {
+                    const lowerName = file.name.toLowerCase();
+                    if (lowerName === 'base.xlsx') {
+                        try {
+                            const arrayBuffer = await file.arrayBuffer();
+                            baseExcelTemplate = XLSX.read(arrayBuffer, { type: 'array', cellStyles: true });
+                        } catch(e) { console.error("Erreur lecture base.xlsx :", e); }
+                    } else if (file.name.endsWith('.txt')) {
+                        try {
+                            const text = await new Promise((resolve) => {
+                                const reader = new FileReader();
+                                reader.onload = (e) => resolve(e.target.result);
+                                reader.readAsText(file, "windows-1252");
+                            });
+                            const siteName = file.name.replace(/\.[^/.]+$/, "").trim().toLowerCase();
+                            chambresParSite[siteName] = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                        } catch(e) {
+                            console.error("Erreur lecture base chambre :", e);
+                        }
+                    }
+                    continue;
+                }
+
+                const fName = file.name.split('\\').pop().split('/').pop().trim().toLowerCase();
+                if (fName.endsWith('.pdf')) {
+                    scansFilesMap[fName] = { file: file, fullPath: relativePath };
+                }
+            }
+
+            if (Object.keys(chambresParSite).length > 0) {
+                localStorage.setItem('chambres_par_site_cache', JSON.stringify(chambresParSite));
+            }
+            
+            alert(`Indexation réussie !\n- ${Object.keys(scansFilesMap).length} PDF scannés chargés.\n- ${Object.keys(chambresParSite).length} listes de chambres mémorisées.`);
+            
+            if (currentData.length > 0) {
+                displayCurrentRecord();
+            }
+        }
+
+        function parseAndLoadTxt(text) {
+            const lines = text.split(/\r?\n/);
+            let rawParsedData = [];
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                const cols = line.split(';');
+                
+                if (i === 0 || cols[0].includes("1 - Etat") || cols[6]?.includes("No Rsa")) {
+                    continue;
+                }
+
+                const now = new Date();
+                const formattedDate = String(now.getDate()).padStart(2, '0') + '/' + String(now.getMonth() + 1).padStart(2, '0') + '/' + now.getFullYear();
+                const formattedTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
+
+                const rawRectoPath = (cols[3] || '').trim();
+                const rawVersoPath = (cols[4] || '').trim();
+                const pureRectoName = rawRectoPath ? rawRectoPath.split('\\').pop().split('/').pop().trim() : '';
+                const pureVersoName = rawVersoPath ? rawVersoPath.split('\\').pop().split('/').pop().trim() : '';
+
+                let rawArr = cols[12] ? cols[12].replace(/00:00:00/g, '').replace(/00:00/g, '').trim() : '';
+                let rawDep = cols[13] ? cols[13].replace(/00:00:00/g, '').replace(/00:00/g, '').trim() : '';
+
+                rawParsedData.push({
+                    rawCols: cols.map(c => c.trim()),
+                    recto: pureRectoName,       
+                    verso: pureVersoName,       
+                    langue: (cols[5] || 'Français').trim(), 
+                    no_resa: (cols[6] || '').trim(),     
+                    pays: (cols[7] || '').trim(),        
+                    site: (cols[8] || '').trim(),        
+                    details: (cols[9] || '').trim(),     
+                    societe: (cols[10] || '').trim(),    
+                    seminaire: (cols[11] || '').trim(),  
+                    date_arrivee: rawArr, 
+                    date_depart: rawDep,   
+                    nb_participants: (cols[14] || '').trim(), 
+                    detail_chambre: (cols[15] || '').trim(),  
+                    salle_reunion: (cols[16] || '').trim(),   
+                    infos: (cols[17] || '').trim(),      
+                    no_contact: (cols[18] || '').trim(), 
+                    prenom: (cols[19] || '').trim(),     
+                    nom: (cols[20] || '').trim(),        
+                    chambre: (cols[21] || '').trim(),    
+                    status_bd: (cols[22] || '').trim(),  
+                    sat_globale: (cols[23] || '').trim(),
+                    sat_acceuil: (cols[24] || '').trim(),
+                    sug_acceuil: (cols[25] || '').trim(),
+                    sat_site: (cols[27] || '').trim(),   
+                    sug_site: (cols[28] || '').trim(),   
+                    sat_chambre: (cols[30] || '').trim(),
+                    sug_chambre: (cols[31] || '').trim(),
+                    sat_proprete: (cols[33] || '').trim(),
+                    sug_proprete: (cols[34] || '').trim(),
+                    sat_pdj: (cols[36] || '').trim(),    
+                    sat_cassec: (cols[37] || '').trim(), 
+                    sat_dej: (cols[38] || '').trim(),    
+                    sat_gouter: (cols[39] || '').trim(), 
+                    sat_apero: (cols[40] || '').trim(),  
+                    sat_diner: (cols[41] || '').trim(),  
+                    sat_presentation: (cols[42] || '').trim(), 
+                    sat_service: (cols[43] || '').trim(),
+                    sug_table: (cols[44] || '').trim(),  
+                    sat_detjour: (cols[46] || '').trim(),
+                    sat_detsoir: (cols[47] || '').trim(),
+                    sug_detente: (cols[48] || '').trim(),
+                    sat_sdr: (cols[50] || '').trim(),    
+                    sug_sdr: (cols[51] || '').trim(),    
+                    autre_suggestion: (cols[53] || '').trim(), 
+                    revenir: (cols[55] || '').trim(),    
+                    recom: (cols[56] || '').trim(),      
+                    prenom_contact: (cols[57] || '').trim(), 
+                    nom_contact: (cols[58] || '').trim(),    
+                    societe_contact: (cols[59] || '').trim(),
+                    adresse_contact: (cols[60] || '').trim(),
+                    cpost_contact: (cols[61] || '').trim(),  
+                    ville_contact: (cols[62] || '').trim(),  
+                    tel_contact: (cols[63] || '').trim(),    
+                    email_contact: (cols[64] || '').trim(),  
+                    pays_contact: (cols[65] || '').trim(),   
+                    region_contact: (cols[66] || '').trim(), 
+                    lettre_web: (cols[67] || '').trim(),     
+                    lmkj: (cols[68] || '').trim(),           
+                    email_participant: (cols[69] || '').trim(), 
+                    com_couple: (cols[70] || '').trim(),     
+                    user_name: (cols[71] || extractedUserName).trim(), 
+                    date_saisie: cols[72] ? cols[72].trim() : formattedDate, 
+                    heure_saisie: cols[73] ? cols[73].trim() : formattedTime, 
+                    code_sem: (cols[74] || cols[6] || '').trim(), 
+                    sat_support: (cols[75] || '').trim(),    
+                    sug_support: (cols[77] || '').trim(),    
+                    sat_signaletique: (cols[78] || '').trim(),
+                    sug_signaletique: (cols[80] || '').trim(),
+                    sat_qualnounou: (cols[81] || '').trim(), 
+                    sug_qualnounou: (cols[83] || '').trim(), 
+                    sat_pertnounou: (cols[84] || '').trim(), 
+                    sug_pertnounou: (cols[86] || '').trim(), 
+                    langue_commentaire: (cols[87] || '').trim(), 
+                    is_home: false,
+                    is_modified: false
+                });
+            }
+
+            const storageKey = `session_${currentTxtBaseName}`;
+            const savedSessionJSON = localStorage.getItem(storageKey);
+
+            if (savedSessionJSON) {
+                try {
+                    const savedSession = JSON.parse(savedSessionJSON);
+                    if (savedSession.data && savedSession.data.length === rawParsedData.length) {
+                        currentData = savedSession.data;
+                        currentIndex = typeof savedSession.currentIndex === 'number' ? savedSession.currentIndex : 0;
+                        alert(`Session précédente restaurée !\nReprise à l'enregistrement n° ${currentIndex + 1}.`);
+                    } else {
+                        currentData = rawParsedData;
+                        currentIndex = findFirstUnprocessedIndex(currentData);
+                    }
+                } catch(e) {
+                    console.error("Erreur de restauration de session :", e);
+                    currentData = rawParsedData;
+                    currentIndex = findFirstUnprocessedIndex(currentData);
+                }
+            } else {
+                currentData = rawParsedData;
+                currentIndex = findFirstUnprocessedIndex(currentData);
+            }
+
+            if (currentData.length > 0) { 
+                displayCurrentRecord(); 
+            } else {
+                alert("Aucune donnée valide trouvée dans le fichier.");
+            }
+        }
+
+        function findFirstUnprocessedIndex(dataArray) {
+            for (let i = 0; i < dataArray.length; i++) {
+                if (!dataArray[i].nom && !dataArray[i].no_resa) {
+                    return i;
+                }
+            }
+            return 0;
+        }
+
+        function displayCurrentRecord() {
+            if (currentData.length === 0) return;
+            const rec = currentData[currentIndex];
+
+            document.getElementById('homeCheckbox').checked = !!rec.is_home;
+            document.getElementById('tabBtn4Nav').style.display = rec.is_home ? 'block' : 'none';
+
+            document.getElementById('f_langue').value = mapLangue(rec.langue);
+            document.getElementById('f_no_resa').value = rec.no_resa;
+            document.getElementById('f_pays').value = rec.pays;
+            document.getElementById('f_site').value = rec.site;
+            document.getElementById('f_details').value = rec.details;
+            document.getElementById('f_societe').value = rec.societe;
+            document.getElementById('f_seminaire').value = rec.seminaire;
+            document.getElementById('f_date_arrivee').value = rec.date_arrivee ? rec.date_arrivee.replace(/00:00:00/g, '').replace(/00:00/g, '').trim() : '';
+            document.getElementById('f_date_depart').value = rec.date_depart ? rec.date_depart.replace(/00:00:00/g, '').replace(/00:00/g, '').trim() : '';
+            document.getElementById('f_nb_participants').value = rec.nb_participants;
+            document.getElementById('f_detail_chambre').value = rec.detail_chambre || '';
+            document.getElementById('f_salle_reunion').value = rec.salle_reunion;
+            document.getElementById('f_infos').value = rec.infos;
+            document.getElementById('f_no_contact').value = rec.no_contact;
+            document.getElementById('f_prenom').value = rec.prenom;
+            document.getElementById('f_nom').value = (rec.nom || '').toUpperCase();
+            updateChambreDatalist(rec.site, rec.chambre);
+
+            document.getElementById('f_revenir').value = rec.revenir || ''; 
+            document.getElementById('f_recom').value = rec.recom || '';
+            document.getElementById('f_prenom_contact').value = rec.prenom_contact || '';
+            document.getElementById('f_nom_contact').value = rec.nom_contact || '';
+            document.getElementById('f_societe_contact').value = rec.societe_contact || '';
+            document.getElementById('f_adresse_contact').value = rec.adresse_contact || '';
+            document.getElementById('f_cpost_contact').value = rec.cpost_contact || '';
+            document.getElementById('f_ville_contact').value = rec.ville_contact || '';
+            document.getElementById('f_tel_contact').value = rec.tel_contact || '';
+            document.getElementById('f_email_contact').value = rec.email_contact || '';
+            document.getElementById('f_pays_contact').value = rec.pays_contact || '';
+            document.getElementById('f_region_contact').value = rec.region_contact || '';
+            document.getElementById('f_lettre_web').value = rec.lettre_web || '';
+            document.getElementById('f_lmkj').value = rec.lmkj || '';
+            document.getElementById('f_email_participant').value = rec.email_participant || '';
+            document.getElementById('f_com_couple').value = rec.com_couple || '';
+            document.getElementById('f_user_name').value = rec.user_name || extractedUserName;
+            document.getElementById('f_date_saisie').value = rec.date_saisie;
+            document.getElementById('f_heure_saisie').value = rec.heure_saisie;
+            document.getElementById('f_code_sem').value = rec.code_sem || rec.no_resa;
+
+            document.getElementById('f_sat_globale').value = rec.sat_globale || '';
+            document.getElementById('f_sat_acceuil').value = rec.sat_acceuil || '';
+            document.getElementById('f_sug_acceuil').value = rec.sug_acceuil || '';
+            document.getElementById('f_sat_site').value = rec.sat_site || '';
+            document.getElementById('f_sug_site').value = rec.sug_site || '';
+            document.getElementById('f_sat_chambre').value = rec.sat_chambre || '';
+            document.getElementById('f_sug_chambre').value = rec.sug_chambre || '';
+            document.getElementById('f_sat_proprete').value = rec.sat_proprete || '';
+            document.getElementById('f_sug_proprete').value = rec.sug_proprete || '';
+            document.getElementById('f_sat_sdr').value = rec.sat_sdr || '';
+            document.getElementById('f_sug_sdr').value = rec.sug_sdr || '';
+            document.getElementById('f_sat_pdj').value = rec.sat_pdj || '';
+            document.getElementById('f_sat_cassec').value = rec.sat_cassec || '';
+            document.getElementById('f_sat_dej').value = rec.sat_dej || '';
+            document.getElementById('f_sat_gouter').value = rec.sat_gouter || '';
+            document.getElementById('f_sat_apero').value = rec.sat_apero || '';
+            document.getElementById('f_sat_diner').value = rec.sat_diner || '';
+            document.getElementById('f_sat_presentation').value = rec.sat_presentation || '';
+            document.getElementById('f_sat_service').value = rec.sat_service || '';
+            document.getElementById('f_sug_table').value = rec.sug_table || '';
+            document.getElementById('f_sat_detjour').value = rec.sat_detjour || '';
+            document.getElementById('f_sat_detsoir').value = rec.sat_detsoir || '';
+            document.getElementById('f_sug_detente').value = rec.sug_detente || '';
+            document.getElementById('f_autre_suggestion').value = rec.autre_suggestion || '';
+            document.getElementById('f_status_bd').value = rec.status_bd || '';
+            document.getElementById('f_langue_commentaire').value = rec.langue_commentaire || ''; 
+
+            document.getElementById('f_sat_support').value = rec.sat_support || '';
+            document.getElementById('f_sug_support').value = rec.sug_support || '';
+            document.getElementById('f_sat_signaletique').value = rec.sat_signaletique || '';
+            document.getElementById('f_sug_signaletique').value = rec.sug_signaletique || '';
+            document.getElementById('f_sat_qualnounou').value = rec.sat_qualnounou || '';
+            document.getElementById('f_sug_qualnounou').value = rec.sug_qualnounou || '';
+            document.getElementById('f_sat_pertnounou').value = rec.sat_pertnounou || '';
+            document.getElementById('f_sug_pertnounou').value = rec.sug_pertnounou || '';
+
+            document.getElementById('recordIndex').innerText = `${currentIndex + 1} / ${currentData.length}`;
+            const targetFileName = currentSide === 'Recto' ? rec.recto : rec.verso;
+            document.getElementById('imageCounterLabel').innerText = `${currentIndex + 1}/${currentData.length} : ${targetFileName || 'Aucun fichier'}`;
+
+            loadTargetPdfFile(targetFileName);
+        }
+
+        function updateChambreDatalist(siteName, currentChambreValue) {
+            const datalist = document.getElementById('chambres_list');
+            datalist.innerHTML = '';
+            if (siteName) {
+                const cleanSite = siteName.toLowerCase().trim().replace(/['\s]/g, "_");
+                let matchedKey = Object.keys(chambresParSite).find(k => {
+                    const cleanK = k.toLowerCase().trim().replace(/['\s]/g, "_");
+                    return cleanK === cleanSite || cleanSite.includes(cleanK) || cleanK.includes(cleanSite);
+                });
+                let listeChambres = matchedKey ? chambresParSite[matchedKey] : [];
+                listeChambres.forEach(ch => {
+                    const opt = document.createElement('option');
+                    opt.value = ch;
+                    datalist.appendChild(opt);
+                });
+            }
+            document.getElementById('f_chambre').value = currentChambreValue || '';
+        }
+
+        function loadTargetPdfFile(fileName) {
+            if (!fileName) return;
+            const lowerName = fileName.toLowerCase();
+
+            if (scansFilesMap[lowerName]) {
+                const fileObj = scansFilesMap[lowerName].file;
+                const fileReader = new FileReader();
+                fileReader.onload = function() {
+                    pdfjsLib.getDocument(new Uint8Array(this.result)).promise.then(function(pdf) {
+                        pdfDoc = pdf;
+                        renderPage(1);
+                    }).catch(err => { console.error(err); });
+                };
+                fileReader.readAsArrayBuffer(fileObj);
+            }
+        }
+
+        function mapLangue(code) {
+            const map = { 'ES':'Espagnol', 'FR':'Français', 'EN':'Anglais', 'DE':'Allemand', 'IT':'Italien', 'NL':'Neerlandais' };
+            return map[code] || code || 'Français';
+        }
+
+        function saveCurrentRecord() {
+            if (currentData.length === 0) return;
+            const rec = currentData[currentIndex];
+
+            const now = new Date();
+            rec.heure_saisie = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
+            const heureInput = document.getElementById('f_heure_saisie');
+            if (heureInput) heureInput.value = rec.heure_saisie;
+
+            rec.is_home = document.getElementById('homeCheckbox').checked;
+            rec.langue = document.getElementById('f_langue').value;
+            rec.no_resa = document.getElementById('f_no_resa').value;
+            rec.pays = document.getElementById('f_pays').value;
+            rec.site = document.getElementById('f_site').value;
+            rec.details = document.getElementById('f_details').value;
+            rec.societe = document.getElementById('f_societe').value;
+            rec.seminaire = document.getElementById('f_seminaire').value;
+            rec.date_arrivee = document.getElementById('f_date_arrivee').value.replace(/00:00:00/g, '').replace(/00:00/g, '').trim();
+            rec.date_depart = document.getElementById('f_date_depart').value.replace(/00:00:00/g, '').replace(/00:00/g, '').trim();
+            rec.nb_participants = document.getElementById('f_nb_participants').value;
+            rec.detail_chambre = document.getElementById('f_detail_chambre').value;
+            rec.salle_reunion = document.getElementById('f_salle_reunion').value;
+            rec.infos = document.getElementById('f_infos').value;
+            rec.no_contact = document.getElementById('f_no_contact').value;
+            rec.prenom = document.getElementById('f_prenom').value;
+            rec.nom = document.getElementById('f_nom').value.toUpperCase();
+            rec.chambre = document.getElementById('f_chambre').value;
+
+            rec.revenir = document.getElementById('f_revenir').value;
+            rec.recom = document.getElementById('f_recom').value;
+            rec.prenom_contact = document.getElementById('f_prenom_contact').value;
+            rec.nom_contact = document.getElementById('f_nom_contact').value;
+            rec.societe_contact = document.getElementById('f_societe_contact').value;
+            rec.adresse_contact = document.getElementById('f_adresse_contact').value;
+            rec.cpost_contact = document.getElementById('f_cpost_contact').value;
+            rec.ville_contact = document.getElementById('f_ville_contact').value;
+            rec.tel_contact = document.getElementById('f_tel_contact').value;
+            rec.email_contact = document.getElementById('f_email_contact').value;
+            rec.pays_contact = document.getElementById('f_pays_contact').value;
+            rec.region_contact = document.getElementById('f_region_contact').value;
+            rec.lettre_web = document.getElementById('f_lettre_web').value;
+            rec.lmkj = document.getElementById('f_lmkj').value;
+            rec.email_participant = document.getElementById('f_email_participant').value;
+            rec.com_couple = document.getElementById('f_com_couple').value;
+            rec.user_name = document.getElementById('f_user_name').value;
+            rec.date_saisie = document.getElementById('f_date_saisie').value;
+            rec.code_sem = document.getElementById('f_code_sem').value;
+
+            rec.sat_globale = document.getElementById('f_sat_globale').value;
+            rec.sat_acceuil = document.getElementById('f_sat_acceuil').value;
+            rec.sug_acceuil = document.getElementById('f_sug_acceuil').value;
+            rec.sat_site = document.getElementById('f_sat_site').value;
+            rec.sug_site = document.getElementById('f_sug_site').value;
+            rec.sat_chambre = document.getElementById('f_sat_chambre').value;
+            rec.sug_chambre = document.getElementById('f_sug_chambre').value;
+            rec.sat_proprete = document.getElementById('f_sat_proprete').value;
+            rec.sug_proprete = document.getElementById('f_sug_proprete').value;
+            rec.sat_sdr = document.getElementById('f_sat_sdr').value;
+            rec.sug_sdr = document.getElementById('f_sug_sdr').value;
+            rec.sat_pdj = document.getElementById('f_sat_pdj').value;
+            rec.sat_cassec = document.getElementById('f_sat_cassec').value;
+            rec.sat_dej = document.getElementById('f_sat_dej').value;
+            rec.sat_gouter = document.getElementById('f_sat_gouter').value;
+            rec.sat_apero = document.getElementById('f_sat_apero').value;
+            rec.sat_diner = document.getElementById('f_sat_diner').value;
+            rec.sat_presentation = document.getElementById('f_sat_presentation').value;
+            rec.sat_service = document.getElementById('f_sat_service').value;
+            rec.sug_table = document.getElementById('f_sug_table').value;
+            rec.sat_detjour = document.getElementById('f_sat_detjour').value;
+            rec.sat_detsoir = document.getElementById('f_sat_detsoir').value;
+            rec.sug_detente = document.getElementById('f_sug_detente').value;
+            rec.autre_suggestion = document.getElementById('f_autre_suggestion').value;
+            rec.status_bd = document.getElementById('f_status_bd').value;
+            rec.langue_commentaire = document.getElementById('f_langue_commentaire').value;
+
+            rec.sat_support = document.getElementById('f_sat_support').value;
+            rec.sug_support = document.getElementById('f_sug_support').value;
+            rec.sat_signaletique = document.getElementById('f_sat_signaletique').value;
+            rec.sug_signaletique = document.getElementById('f_sug_signaletique').value;
+            rec.sat_qualnounou = document.getElementById('f_sat_qualnounou').value;
+            rec.sug_qualnounou = document.getElementById('f_sug_qualnounou').value;
+            rec.sat_pertnounou = document.getElementById('f_sat_pertnounou').value;
+            rec.sug_pertnounou = document.getElementById('f_sug_pertnounou').value;
+
+            const sessionData = {
+                currentIndex: currentIndex,
+                data: currentData
+            };
+            localStorage.setItem(`session_${currentTxtBaseName}`, JSON.stringify(sessionData));
+            saveTmpFile(currentIndex + 1, rec);
+        }
+
+        function saveTmpFile(recordNum, recordData) {
+            if (!isDesktop || !fs || !path) return;
+            try {
+                let tmpDir = path.join(process.cwd(), 'tmp');
+                if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+
+                let fileSubDir = path.join(tmpDir, currentTxtBaseName);
+                if (!fs.existsSync(fileSubDir)) fs.mkdirSync(fileSubDir, { recursive: true });
+
+                let tmpFileName = `${currentTxtBaseName}_${recordNum}_temporaire.tmp`;
+                let fullPath = path.join(fileSubDir, tmpFileName);
+
+                let content = JSON.stringify(recordData, null, 2);
+                fs.writeFileSync(fullPath, content, 'utf8');
+            } catch(e) {
+                console.error("Erreur écriture fichier .tmp local :", e);
+            }
+        }
+
+        function prevRecord() {
+            if (currentData.length > 0) saveCurrentRecord();
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateActiveTabVisual(1);
+                displayCurrentRecord();
+            }
+        }
+
+        function nextRecord() {
+            if (currentData.length > 0) saveCurrentRecord();
+            if (currentIndex < currentData.length - 1) {
+                currentIndex++;
+                updateActiveTabVisual(1);
+                displayCurrentRecord();
+            }
+        }
+
+        function switchSide(side) {
+            currentSide = side;
+            const btnR = document.getElementById('btnRecto');
+            const btnV = document.getElementById('btnVerso');
+            
+            if (side === 'Recto') {
+                btnR.classList.add('active');
+                btnV.classList.remove('active');
+            } else {
+                btnR.classList.remove('active');
+                btnV.classList.add('active');
+            }
+            displayCurrentRecord();
+        }
+
+        function exportData() {
+            if (currentData.length === 0) {
+                alert('Aucune donnée à exporter.');
+                return;
+            }
+            saveCurrentRecord();
+
+            const headers = [
+                "4 - Nom image recto", "5 - Nom image verso", "6 - Langue", "7 - No Résa", "8 - Pays", 
+                "9 - Site", "10 - Détail Site", "11 - Nom Société", "12 - Nom Séminaire", "13 - Date arrivée", 
+                "14 - Date départ", "15 - Nb participants", "16 - Détail chambre", "17 - Salle de réunion", 
+                "18 - Infos", "19 - No contact", "20 - Prenompart", "21 - Nompart", "22 - Chambrepart", 
+                "23 - Statut_BD", "24 - Satglob", "25 - Satacc", "26 - accsug", "27 - class_acc", 
+                "28 - Satsite", "29 - sitesug", "30 - class_site", "31 - Satchamb", "32 - chambsug", 
+                "33 - class_chamb", "34 - Satprop", "35 - propsug", "36 - class_prop", "37 - Satpdj", 
+                "38 - Satcasse-croute", "39 - Satdej", "40 - Satgouter", "41 - Satapero", "42 - Satdin", 
+                "43 - Satpresent", "44 - Satserv", "45 - tablesug", "46 - class_table", "47 - Satdet_jour", 
+                "48 - Satdet_soir", "49 - detsug", "50 - class_det", "51 - Satsdr", "52 - sdrsug", 
+                "53 - class_sdr", "54 - Autressug", "55 - class_autres", "56 - Revenir", "57 - Recom", 
+                "58 - Prenomcontact", "59 - Nomcontact", "60 - Societcontact", "61 - Adrcontact", "62 - Cpostcontact", 
+                "63 - Villecontact", "64 - Telcontact", "65 - mailcontact", "66 - Payscontact", "67 - Regcontact", 
+                "68 - Lettre Web", "69 - LMKJ", "70 - mail_participant", "71 - com_couple", "72 - user_name", 
+                "73 - datesaisie", "74 - heuresaisie", "75 - Codsem", "76 - Satsupport", "77 - class_support", 
+                "78 - Supportsug", "79 - Satsignaletique", "80 - class_signaletique", "81 - Signaletiquesug", 
+                "82 - SatQualNounou", "83 - class_QualNounou", "84 - QualNounousug", "85 - SatPertNounou", 
+                "86 - class_PertNounou", "87 - PertNounousug", "Langue_commentaire"
+            ];
+
+            let dataRows = [];
+            let totalCharCountRaw = 0;
+
+            currentData.forEach(item => {
+                let row = new Array(85).fill("");
+                row[0] = item.recto;                  
+                row[1] = item.verso;                  
+                row[2] = item.langue;                 
+                row[3] = item.no_resa;                
+                row[4] = item.pays;                   
+                row[5] = item.site;                   
+                row[6] = item.details;                
+                row[7] = item.societe;                
+                row[8] = item.seminaire;              
+                row[9] = item.date_arrivee;           
+                row[10] = item.date_depart;           
+                row[11] = item.nb_participants;       
+                row[12] = item.detail_chambre;        
+                row[13] = item.salle_reunion;         
+                row[14] = item.infos;                 
+                row[15] = item.no_contact;            
+                row[16] = item.prenom;                
+                row[17] = item.nom;                   
+                row[18] = item.chambre;               
+                row[19] = item.status_bd;             
+                row[20] = item.sat_globale;           
+                row[21] = item.sat_acceuil;           
+                row[22] = item.sug_acceuil;           
+                row[23] = "";                         
+                row[24] = item.sat_site;              
+                row[25] = item.sug_site;              
+                row[26] = "";                         
+                row[27] = item.sat_chambre;           
+                row[28] = item.sug_chambre;           
+                row[29] = "";                         
+                row[30] = item.sat_proprete;          
+                row[31] = item.sug_proprete;          
+                row[32] = "";                         
+                row[33] = item.sat_pdj;               
+                row[34] = item.sat_cassec;            
+                row[35] = item.sat_dej;               
+                row[36] = item.sat_gouter;            
+                row[37] = item.sat_apero;             
+                row[38] = item.sat_diner;             
+                row[39] = item.sat_presentation;      
+                row[40] = item.sat_service;           
+                row[41] = item.sug_table;             
+                row[42] = "";                         
+                row[43] = item.sat_detjour;           
+                row[44] = item.sat_detsoir;           
+                row[45] = item.sug_detente;           
+                row[46] = "";                         
+                row[47] = item.sat_sdr;               
+                row[48] = item.sug_sdr;               
+                row[49] = "";                         
+                row[50] = item.autre_suggestion;      
+                row[51] = "";                         
+                row[52] = item.revenir;               
+                row[53] = item.recom;                 
+                row[54] = item.prenom_contact;        
+                row[55] = item.nom_contact;           
+                row[56] = item.societe_contact;       
+                row[57] = item.adresse_contact;       
+                row[58] = item.cpost_contact;         
+                row[59] = item.ville_contact;         
+                row[60] = item.tel_contact;           
+                row[61] = item.email_contact;         
+                row[62] = item.pays_contact;          
+                row[63] = item.region_contact;        
+                row[64] = item.lettre_web;            
+                row[65] = item.lmkj;                  
+                row[66] = item.email_participant;     
+                row[67] = item.com_couple;            
+                row[68] = item.user_name;             
+                row[69] = item.date_saisie;           
+                row[70] = item.heure_saisie;          
+                row[71] = item.code_sem;              
+
+                if (item.is_home) {
+                    row[72] = item.sat_support;       
+                    row[73] = "";                     
+                    row[74] = item.sug_support;       
+                    row[75] = item.sat_signaletique;  
+                    row[76] = "";                     
+                    row[77] = item.sug_signaletique;  
+                    row[78] = item.sat_qualnounou;    
+                    row[79] = "";                     
+                    row[80] = item.sug_qualnounou;    
+                    row[81] = item.sat_pertnounou;    
+                    row[82] = "";                     
+                    row[83] = item.sug_pertnounou;    
+                }
+
+                row[84] = item.langue_commentaire;    
+
+                let rowTxt = row.map(v => (v !== null && v !== undefined) ? String(v) : "").join(";");
+                totalCharCountRaw += rowTxt.length + 2;
+
+                dataRows.push(row);
+            });
+
+            let finalCharDisplay = Math.round(totalCharCountRaw + (currentData.length * 7.85));
+
+            let wb;
+            let ws;
+
+            if (baseExcelTemplate) {
+                wb = baseExcelTemplate;
+                const sheetName = wb.SheetNames[0] || "Base";
+                ws = wb.Sheets[sheetName];
+                XLSX.utils.sheet_add_aoa(ws, dataRows, { origin: "A2" });
+            } else {
+                wb = XLSX.utils.book_new();
+                let fullRows = [headers, ...dataRows];
+                ws = XLSX.utils.aoa_to_sheet(fullRows);
+                XLSX.utils.book_append_sheet(wb, ws, "Base");
+            }
+
+            for (let c = 0; c < headers.length; c++) {
+                const cellRef = XLSX.utils.encode_cell({ r: 0, c: c });
+                if (!ws[cellRef]) {
+                    ws[cellRef] = { t: 's', v: headers[c] };
+                }
+                ws[cellRef].s = {
+                    font: {
+                        bold: true,
+                        name: "Calibri"
+                    }
+                };
+            }
+
+            if (!ws['!data_validations']) {
+                ws['!data_validations'] = [];
+            }
+
+            const maxRow = dataRows.length + 1;
+            const satOptions = '"Complètement satisfait,Très satisfait,Satisfait,Moyennement satisfait,Insatisfait"';
+            const languesOptions = '"Français,Allemand,Anglais,Espagnol,Italien,Neerlandais"';
+            const statusOptions = '"Pour commentaires,Vierge"';
+            const revenirOptions = '"Certainement,Probablement,Peut-être,Sûrement pas"';
+            const recomOptions = '"Vivement,Probablement,Peut-être,Sûrement pas"';
+
+            function addDropdown(colIndex, formulaString) {
+                const startCell = XLSX.utils.encode_cell({ r: 1, c: colIndex });
+                const endCell = XLSX.utils.encode_cell({ r: maxRow > 1 ? maxRow - 1 : 1, c: colIndex });
+                ws['!data_validations'].push({
+                    type: 'list',
+                    allowBlank: true,
+                    sqref: `${startCell}:${endCell}`,
+                    formula1: formulaString
+                });
+            }
+
+            addDropdown(2, languesOptions);
+            addDropdown(15, '"Pas de chambre connue,Délogé"');
+            addDropdown(19, statusOptions);
+
+            const satCols = [20, 21, 24, 27, 30, 33, 34, 35, 36, 37, 38, 39, 40, 43, 44, 47, 50, 72, 75, 78, 81];
+            satCols.forEach(col => addDropdown(col, satOptions));
+
+            addDropdown(52, revenirOptions);
+            addDropdown(53, recomOptions);
+            addDropdown(84, languesOptions);
+
+            const excelFileName = `${currentTxtBaseName}.xlsx`;
+            XLSX.writeFile(wb, excelFileName);
+
+            // Affichage de la boîte de dialogue modale professionnelle
+            document.getElementById('modalCharCount').innerText = finalCharDisplay;
+            new bootstrap.Modal(document.getElementById('exportModal')).show();
+        }
+
+        function renderPage(pageNum) {
+            if (!pdfDoc) return;
+            pdfDoc.getPage(pageNum).then(function(page) {
+                const canvas = document.getElementById('pdfCanvas');
+                const ctx = canvas.getContext('2d');
+                const viewport = page.getViewport({ scale: currentScale, rotation: currentRotation });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                page.render({ canvasContext: ctx, viewport: viewport });
+            });
+        }
+
+        function zoom(delta) {
+            currentScale = Math.max(0.4, currentScale + delta);
+            document.getElementById('zoomLevel').innerText = Math.round(currentScale * 100) + '%';
+            if (pdfDoc) renderPage(1);
+        }
+
+        function rotate() {
+            currentRotation = (currentRotation + 90) % 360;
+            if (pdfDoc) renderPage(1);
+        }
+    </script>
+</body>
+</html>
